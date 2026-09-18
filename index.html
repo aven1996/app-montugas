@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Monitoring Tugas Siswa</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+
+  <header class="bg-indigo-600 text-white shadow-md sticky top-0 z-10">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <i data-lucide="book-open" class="w-7 h-7"></i>
+        <h1 class="text-xl font-bold tracking-wide">Monitoring Tugas Siswa</h1>
+      </div>
+      <button onclick="fetchData()" title="Muat Ulang Data" class="flex items-center gap-1 text-xs bg-indigo-700/70 hover:bg-indigo-700 px-3 py-1.5 rounded-lg border border-indigo-400/30 transition">
+        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Sinkron
+      </button>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 py-8">
+
+    <!-- Loading Indicator -->
+    <div id="loading-overlay" class="hidden text-center py-12">
+      <div class="inline-block animate-spin w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full mb-3"></div>
+      <p class="text-sm text-slate-500 font-medium">Memproses data dengan Database...</p>
+    </div>
+
+    <!-- ================= VIEW 1: DAFTAR SISWA ================= -->
+    <section id="view-student-list">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-800">Daftar Siswa</h2>
+          <p class="text-sm text-slate-500">Pilih salah satu siswa untuk memeriksa atau mengubah revisi.</p>
+        </div>
+        <div class="relative w-full sm:w-72">
+          <input
+            type="text"
+            id="search-input"
+            placeholder="Cari nama atau kelas..."
+            class="w-full pl-10 pr-4 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+          />
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-x-auto">
+        <table class="w-full min-w-[700px] text-left border-collapse">
+          <thead>
+            <tr class="bg-slate-100/75 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase">
+              <th class="py-3 px-4 w-16 text-center">No</th>
+              <th class="py-3 px-4">Nama Siswa</th>
+              <th class="py-3 px-4">Kelas</th>
+              <th class="py-3 px-4 text-center">Progress Revisi</th>
+              <th class="py-3 px-4 text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="student-table-body" class="divide-y divide-slate-100 text-sm"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ================= VIEW 2: DETAIL REVISI ================= -->
+    <section id="view-student-detail" class="hidden">
+      <button id="btn-back" class="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-800 font-medium mb-6 transition">
+        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+        Kembali ke Daftar Siswa
+      </button>
+
+      <!-- Identitas Siswa -->
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 id="detail-student-name" class="text-2xl font-bold text-slate-800">-</h2>
+          <p id="detail-student-class" class="text-sm text-slate-500">Kelas: -</p>
+        </div>
+        <div id="detail-student-status-badge"></div>
+      </div>
+
+      <!-- Tambah Revisi -->
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
+        <h3 class="text-base font-semibold text-slate-800 mb-3 flex items-center gap-2">
+          <i data-lucide="plus-circle" class="w-5 h-5 text-indigo-600"></i>
+          Tambah Revisi Baru ke Database
+        </h3>
+        <form id="form-add-revision" class="flex flex-col sm:flex-row gap-3">
+          <input
+            type="text"
+            id="revision-input"
+            placeholder="Tuliskan catatan revisi tugas..."
+            required
+            class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none"
+          />
+          <button
+            type="submit"
+            id="btn-submit-add"
+            class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-5 py-2.5 rounded-lg text-sm transition flex items-center justify-center gap-2"
+          >
+            <i data-lucide="send" class="w-4 h-4"></i>
+            Simpan
+          </button>
+        </form>
+      </div>
+
+      <!-- Daftar Revisi Siswa -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <h3 class="text-base font-semibold text-slate-800 mb-4">Daftar Revisi Terjadwal</h3>
+        <ul id="revision-list" class="space-y-3"></ul>
+        <div id="empty-state" class="hidden text-center py-8 text-slate-400">
+          <i data-lucide="check-circle" class="w-12 h-12 mx-auto mb-2 text-emerald-500 stroke-1"></i>
+          <p class="font-medium text-slate-600">Tidak ada revisi aktif untuk siswa ini.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // ============================================
+    // MASUKKAN URL HASIL DEPLOY APPS SCRIPT DI SINI
+    // ==========================================
+    const API_URL = "https://script.google.com/macros/s/AKfycbwbL2nmEzSl2vwBcYXpnRui3fTB_iV5Q5Fi8msRIRGisCwyU-piCKLwycp9I3zSVnj8OA/exec";
+
+    let rawSheetData = [];
+    let studentsMap = {};
+    let currentSelectedNama = null;
+
+    function showLoading(show) {
+      document.getElementById("loading-overlay").classList.toggle("hidden", !show);
+    }
+
+    // Mengambil data terkini dari Google Sheets
+    async function fetchData() {
+      if (!API_URL || API_URL.includes("TEMPEL_URL")) {
+        alert("Harap masukkan Web App URL Google Apps Script Anda ke variabel API_URL di dalam file HTML ini.");
+        return;
+      }
+
+      showLoading(true);
+      try {
+        const res = await fetch(API_URL);
+        rawSheetData = await res.json();
+        groupDataByStudent();
+        renderStudentTable();
+        if (currentSelectedNama) {
+          renderStudentDetail(currentSelectedNama);
+        }
+      } catch (err) {
+        console.error("Gagal mengambil data:", err);
+        alert("Gagal memuat data dari Google Sheets. Pastikan hak akses Deploy Web App adalah 'Anyone'.");
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    // Mengelompokkan baris spreadsheet berdasarkan nama siswa
+    function groupDataByStudent() {
+      studentsMap = {};
+      rawSheetData.forEach(row => {
+        const name = row.nama;
+        if (!studentsMap[name]) {
+          studentsMap[name] = {
+            nama: name,
+            kelas: row.kelas,
+            revisions: []
+          };
+        }
+        if (row.revisi && row.revisi.trim() !== "") {
+          studentsMap[name].revisions.push({
+            id: row.id,
+            revisi: row.revisi,
+            status: row.status.toLowerCase() === "selesai" ? "Selesai" : "Belum"
+          });
+        }
+      });
+    }
+
+    function renderStudentTable(filterText = "") {
+      const tbody = document.getElementById("student-table-body");
+      tbody.innerHTML = "";
+      const names = Object.keys(studentsMap).filter(name => {
+        const item = studentsMap[name];
+        return item.nama.toLowerCase().includes(filterText.toLowerCase()) || 
+               item.kelas.toLowerCase().includes(filterText.toLowerCase());
+      });
+
+      if (names.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-400">Data siswa tidak ditemukan.</td></tr>`;
+        return;
+      }
+
+      names.forEach((name, idx) => {
+        const s = studentsMap[name];
+        const total = s.revisions.length;
+        const done = s.revisions.filter(r => r.status === "Selesai").length;
+
+        let badge = `<span class="px-2.5 py-1 text-xs rounded-full bg-slate-100 text-slate-600 font-medium">Bebas Revisi</span>`;
+        if (total > 0) {
+          if (done === total) {
+            badge = `<span class="px-2.5 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700 font-medium flex items-center justify-center gap-1 w-fit mx-auto"><i data-lucide="check" class="w-3 h-3"></i> Tuntas (${done}/${total})</span>`;
+          } else {
+            badge = `<span class="px-2.5 py-1 text-xs rounded-full bg-amber-100 text-amber-700 font-medium w-fit mx-auto block">Proses (${done}/${total})</span>`;
+          }
+        }
+
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50 cursor-pointer transition";
+        tr.innerHTML = `
+          <td class="py-3 px-4 text-center text-slate-400">${idx + 1}</td>
+          <td class="py-3 px-4 font-semibold text-slate-800">${s.nama}</td>
+          <td class="py-3 px-4 text-slate-500">${s.kelas}</td>
+          <td class="py-3 px-4 text-center">${badge}</td>
+          <td class="py-3 px-4 text-right">
+            <button class="text-indigo-600 hover:text-indigo-800 font-medium text-xs bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-md transition">
+              Buka &rarr;
+            </button>
+          </td>
+        `;
+        tr.onclick = () => openDetail(s.nama);
+        tbody.appendChild(tr);
+      });
+
+      lucide.createIcons();
+    }
+
+    document.getElementById("search-input").addEventListener("input", (e) => {
+      renderStudentTable(e.target.value);
+    });
+
+    function openDetail(nama) {
+      currentSelectedNama = nama;
+      document.getElementById("view-student-list").classList.add("hidden");
+      document.getElementById("view-student-detail").classList.remove("hidden");
+      renderStudentDetail(nama);
+    }
+
+    document.getElementById("btn-back").addEventListener("click", () => {
+      currentSelectedNama = null;
+      document.getElementById("view-student-detail").classList.add("hidden");
+      document.getElementById("view-student-list").classList.remove("hidden");
+      renderStudentTable();
+    });
+
+    function renderStudentDetail(nama) {
+      const student = studentsMap[nama];
+      if (!student) return;
+
+      document.getElementById("detail-student-name").textContent = student.nama;
+      document.getElementById("detail-student-class").textContent = `Kelas: ${student.kelas}`;
+
+      const revList = student.revisions;
+      const total = revList.length;
+      const done = revList.filter(r => r.status === "Selesai").length;
+      const badgeElem = document.getElementById("detail-student-status-badge");
+
+      if (total === 0) {
+        badgeElem.innerHTML = `<span class="px-3 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-600">Tidak ada butir revisi</span>`;
+      } else if (done === total) {
+        badgeElem.innerHTML = `<span class="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-700">Semua Tuntas (${done}/${total})</span>`;
+      } else {
+        badgeElem.innerHTML = `<span class="px-3 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-700">Belum Selesai (${done}/${total})</span>`;
+      }
+
+      const listContainer = document.getElementById("revision-list");
+      const emptyState = document.getElementById("empty-state");
+      listContainer.innerHTML = "";
+
+      if (total === 0) {
+        emptyState.classList.remove("hidden");
+      } else {
+        emptyState.classList.add("hidden");
+        revList.forEach((rev) => {
+          const isDone = rev.status === "Selesai";
+          const li = document.createElement("li");
+          li.className = `flex items-center justify-between p-3.5 rounded-lg border transition ${
+            isDone ? "bg-slate-50 border-slate-200 text-slate-400" : "bg-white border-slate-200 text-slate-800 hover:border-slate-300 shadow-sm"
+          }`;
+
+          li.innerHTML = `
+            <label class="flex items-center gap-3 cursor-pointer select-none flex-1">
+              <input
+                type="checkbox"
+                ${isDone ? "checked" : ""}
+                onchange="toggleRevisionStatus('${rev.id}')"
+                class="w-5 h-5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+              />
+              <span class="text-sm ${isDone ? "line-through text-slate-400" : "font-medium"}">
+                ${rev.revisi}
+              </span>
+            </label>
+            <button
+              onclick="deleteRevision('${rev.id}')"
+              title="Hapus dari Spreadsheet"
+              class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition ml-2"
+            >
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          `;
+          listContainer.appendChild(li);
+        });
+      }
+
+      lucide.createIcons();
+    }
+
+    // ==========================================
+    // OPERASI POST KE APPS SCRIPT (MUTASI DATA)
+    // ==========================================
+    async function sendPostAction(payload) {
+      showLoading(true);
+      try {
+        await fetch(API_URL, {
+          method: "POST",
+          mode: "no-cors", // Standar redirect Google Apps Script
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        // Tarik ulang data setelah mutasi berhasil tercatat
+        await fetchData();
+      } catch (err) {
+        console.error("Gagal mengirim aksi:", err);
+        alert("Terjadi kendala saat memperbarui spreadsheet.");
+        showLoading(false);
+      }
+    }
+
+    // Form Tambah
+    document.getElementById("form-add-revision").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const input = document.getElementById("revision-input");
+      const text = input.value.trim();
+      if (!text || !currentSelectedNama) return;
+
+      const student = studentsMap[currentSelectedNama];
+      await sendPostAction({
+        action: "ADD",
+        nama: student.nama,
+        kelas: student.kelas,
+        revisi: text
+      });
+      input.value = "";
+    });
+
+    // Centang / Selesai
+    window.toggleRevisionStatus = async function(revId) {
+      await sendPostAction({
+        action: "TOGGLE_STATUS",
+        id: revId
+      });
+    };
+
+    // Hapus
+    window.deleteRevision = async function(revId) {
+      if (!confirm("Hapus catatan revisi ini dari spreadsheet?")) return;
+      await sendPostAction({
+        action: "DELETE",
+        id: revId
+      });
+    };
+
+    // Load awal saat halaman dibuka
+    fetchData();
+  </script>
+</body>
+</html>
