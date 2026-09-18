@@ -34,7 +34,7 @@
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h2 class="text-2xl font-bold text-slate-800">Daftar Siswa</h2>
-          <p class="text-sm text-slate-500">Pilih salah satu siswa untuk memeriksa atau mengubah revisi.</p>
+          <p class="text-sm text-slate-500">Pilih salah satu siswa untuk memeriksa revisi atau menginput nilai 3 guru.</p>
         </div>
         <div class="relative w-full sm:w-72">
           <input
@@ -47,14 +47,15 @@
         </div>
       </div>
 
-      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-x-auto">
-        <table class="w-full min-w-[700px] text-left border-collapse">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <table class="w-full text-left border-collapse">
           <thead>
             <tr class="bg-slate-100/75 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase">
               <th class="py-3 px-4 w-16 text-center">No</th>
               <th class="py-3 px-4">Nama Siswa</th>
               <th class="py-3 px-4">Kelas</th>
               <th class="py-3 px-4 text-center">Progress Revisi</th>
+              <th class="py-3 px-4 text-center">Rata-rata Nilai</th>
               <th class="py-3 px-4 text-right">Aksi</th>
             </tr>
           </thead>
@@ -63,7 +64,7 @@
       </div>
     </section>
 
-    <!-- ================= VIEW 2: DETAIL REVISI ================= -->
+    <!-- ================= VIEW 2: DETAIL REVISI & NILAI ================= -->
     <section id="view-student-detail" class="hidden">
       <button id="btn-back" class="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-800 font-medium mb-6 transition">
         <i data-lucide="arrow-left" class="w-4 h-4"></i>
@@ -105,13 +106,82 @@
       </div>
 
       <!-- Daftar Revisi Siswa -->
-      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
         <h3 class="text-base font-semibold text-slate-800 mb-4">Daftar Revisi Terjadwal</h3>
         <ul id="revision-list" class="space-y-3"></ul>
         <div id="empty-state" class="hidden text-center py-8 text-slate-400">
           <i data-lucide="check-circle" class="w-12 h-12 mx-auto mb-2 text-emerald-500 stroke-1"></i>
           <p class="font-medium text-slate-600">Tidak ada revisi aktif untuk siswa ini.</p>
         </div>
+      </div>
+
+      <!-- Input Nilai 3 Guru -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <h3 class="text-base font-semibold text-slate-800 mb-4 flex items-center gap-2">
+          <i data-lucide="award" class="w-5 h-5 text-indigo-600"></i>
+          Penilaian Tugas
+        </h3>
+
+        <form id="form-scores" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
+            <!-- Nilai Guru 1 -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1.5">Nilai Guru 1</label>
+              <input
+                type="number"
+                id="score-1"
+                min="0"
+                max="100"
+                step="any"
+                placeholder="0 - 100"
+                class="score-input w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none"
+              />
+            </div>
+
+            <!-- Nilai Guru 2 -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1.5">Nilai Guru 2</label>
+              <input
+                type="number"
+                id="score-2"
+                min="0"
+                max="100"
+                step="any"
+                placeholder="0 - 100"
+                class="score-input w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none"
+              />
+            </div>
+
+            <!-- Nilai Guru 3 -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1.5">Nilai Guru 3</label>
+              <input
+                type="number"
+                id="score-3"
+                min="0"
+                max="100"
+                step="any"
+                placeholder="0 - 100"
+                class="score-input w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none"
+              />
+            </div>
+
+            <!-- Tampilan Rata-rata Otomatis -->
+            <div class="bg-indigo-50 border border-indigo-100 p-2.5 rounded-lg text-center">
+              <span class="block text-xs font-semibold text-indigo-700">Rata-rata</span>
+              <span id="score-average" class="text-2xl font-bold text-indigo-950">-</span>
+            </div>
+          </div>
+
+          <div class="flex justify-end pt-2">
+            <button
+              type="submit"
+              class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-5 py-2 rounded-lg text-sm transition flex items-center gap-2"
+            >
+              <i data-lucide="save" class="w-4 h-4"></i> Simpan Nilai
+            </button>
+          </div>
+        </form>
       </div>
     </section>
 
@@ -120,7 +190,7 @@
   <script>
     // ============================================
     // MASUKKAN URL HASIL DEPLOY APPS SCRIPT DI SINI
-    // ==========================================
+    // ============================================
     const API_URL = "https://script.google.com/macros/s/AKfycbwbL2nmEzSl2vwBcYXpnRui3fTB_iV5Q5Fi8msRIRGisCwyU-piCKLwycp9I3zSVnj8OA/exec";
 
     let rawSheetData = [];
@@ -164,6 +234,10 @@
           studentsMap[name] = {
             nama: name,
             kelas: row.kelas,
+            nilai1: row.nilai1 !== undefined && row.nilai1 !== "" ? row.nilai1 : null,
+            nilai2: row.nilai2 !== undefined && row.nilai2 !== "" ? row.nilai2 : null,
+            nilai3: row.nilai3 !== undefined && row.nilai3 !== "" ? row.nilai3 : null,
+            rataRata: row.rataRata !== undefined && row.rataRata !== "" ? row.rataRata : null,
             revisions: []
           };
         }
@@ -187,7 +261,7 @@
       });
 
       if (names.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-400">Data siswa tidak ditemukan.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-slate-400">Data siswa tidak ditemukan.</td></tr>`;
         return;
       }
 
@@ -205,6 +279,10 @@
           }
         }
 
+        const avgDisplay = s.rataRata !== null && s.rataRata !== "" 
+          ? `<span class="font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md text-xs">${Number(s.rataRata).toFixed(1)}</span>`
+          : `<span class="text-slate-400 text-xs">-</span>`;
+
         const tr = document.createElement("tr");
         tr.className = "hover:bg-slate-50 cursor-pointer transition";
         tr.innerHTML = `
@@ -212,6 +290,7 @@
           <td class="py-3 px-4 font-semibold text-slate-800">${s.nama}</td>
           <td class="py-3 px-4 text-slate-500">${s.kelas}</td>
           <td class="py-3 px-4 text-center">${badge}</td>
+          <td class="py-3 px-4 text-center">${avgDisplay}</td>
           <td class="py-3 px-4 text-right">
             <button class="text-indigo-600 hover:text-indigo-800 font-medium text-xs bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-md transition">
               Buka &rarr;
@@ -302,8 +381,62 @@
         });
       }
 
+      // Memuat nilai ke form
+      document.getElementById("score-1").value = student.nilai1 !== null ? student.nilai1 : "";
+      document.getElementById("score-2").value = student.nilai2 !== null ? student.nilai2 : "";
+      document.getElementById("score-3").value = student.nilai3 !== null ? student.nilai3 : "";
+      hitungRataRata();
+
       lucide.createIcons();
     }
+
+    // ==========================================
+    // PERHITUNGAN RATA-RATA OTOMATIS
+    // ==========================================
+    function hitungRataRata() {
+      const v1 = parseFloat(document.getElementById("score-1").value);
+      const v2 = parseFloat(document.getElementById("score-2").value);
+      const v3 = parseFloat(document.getElementById("score-3").value);
+
+      const scores = [v1, v2, v3].filter(n => !isNaN(n));
+      const avgDisplay = document.getElementById("score-average");
+
+      if (scores.length > 0) {
+        const sum = scores.reduce((a, b) => a + b, 0);
+        const avg = (sum / scores.length).toFixed(1);
+        avgDisplay.textContent = avg;
+        return parseFloat(avg);
+      } else {
+        avgDisplay.textContent = "-";
+        return "";
+      }
+    }
+
+    // Hitung real-time saat ada perubahan input nilai
+    document.querySelectorAll(".score-input").forEach(input => {
+      input.addEventListener("input", hitungRataRata);
+    });
+
+    // Simpan Nilai ke Google Sheets
+    document.getElementById("form-scores").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!currentSelectedNama) return;
+
+      const v1 = document.getElementById("score-1").value;
+      const v2 = document.getElementById("score-2").value;
+      const v3 = document.getElementById("score-3").value;
+      const avg = hitungRataRata();
+
+      await sendPostAction({
+        action: "UPDATE_SCORES",
+        nama: currentSelectedNama,
+        nilai1: v1 !== "" ? Number(v1) : "",
+        nilai2: v2 !== "" ? Number(v2) : "",
+        nilai3: v3 !== "" ? Number(v3) : "",
+        rataRata: avg !== "" ? avg : ""
+      });
+      alert("Nilai berhasil disimpan!");
+    });
 
     // ==========================================
     // OPERASI POST KE APPS SCRIPT (MUTASI DATA)
@@ -313,11 +446,10 @@
       try {
         await fetch(API_URL, {
           method: "POST",
-          mode: "no-cors", // Standar redirect Google Apps Script
+          mode: "no-cors",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
-        // Tarik ulang data setelah mutasi berhasil tercatat
         await fetchData();
       } catch (err) {
         console.error("Gagal mengirim aksi:", err);
@@ -326,7 +458,7 @@
       }
     }
 
-    // Form Tambah
+    // Form Tambah Revisi
     document.getElementById("form-add-revision").addEventListener("submit", async (e) => {
       e.preventDefault();
       const input = document.getElementById("revision-input");
@@ -338,7 +470,11 @@
         action: "ADD",
         nama: student.nama,
         kelas: student.kelas,
-        revisi: text
+        revisi: text,
+        nilai1: student.nilai1,
+        nilai2: student.nilai2,
+        nilai3: student.nilai3,
+        rataRata: student.rataRata
       });
       input.value = "";
     });
@@ -360,7 +496,7 @@
       });
     };
 
-    // Load awal saat halaman dibuka
+    // Muat awal
     fetchData();
   </script>
 </body>
