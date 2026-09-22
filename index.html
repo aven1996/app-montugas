@@ -15,9 +15,14 @@
         <i data-lucide="book-open" class="w-7 h-7"></i>
         <h1 class="text-xl font-bold tracking-wide">Monitoring Tugas Siswa</h1>
       </div>
-      <button onclick="fetchData()" title="Muat Ulang Data" class="flex items-center gap-1 text-xs bg-indigo-700/70 hover:bg-indigo-700 px-3 py-1.5 rounded-lg border border-indigo-400/30 transition">
-        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Sinkron
-      </button>
+      <div class="flex items-center gap-2">
+        <button onclick="downloadExcel()" title="Download Rekap Nilai" class="flex items-center gap-1 text-xs bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 rounded-lg border border-emerald-400/30 transition">
+          <i data-lucide="download" class="w-3.5 h-3.5"></i> Rekap Excel
+        </button>
+        <button onclick="fetchData()" title="Muat Ulang Data" class="flex items-center gap-1 text-xs bg-indigo-700/70 hover:bg-indigo-700 px-3 py-1.5 rounded-lg border border-indigo-400/30 transition">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Sinkron
+        </button>
+      </div>
     </div>
   </header>
 
@@ -249,6 +254,70 @@
           });
         }
       });
+    }
+
+    function escapeExcelValue(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&apos;");
+    }
+
+    function downloadExcel() {
+      const students = Object.values(studentsMap);
+      if (students.length === 0) {
+        alert("Belum ada data siswa untuk diunduh.");
+        return;
+      }
+
+      const rows = students.map((student, index) => {
+        const total = student.revisions.length;
+        const done = student.revisions.filter(revision => revision.status === "Selesai").length;
+        const progress = total > 0 ? `${done}/${total}` : "Bebas Revisi";
+        return [
+          index + 1,
+          student.nama,
+          student.kelas,
+          progress,
+          student.nilai1 ?? "",
+          student.nilai2 ?? "",
+          student.nilai3 ?? "",
+          student.rataRata ?? ""
+        ];
+      });
+
+      const headers = ["No", "Nama Siswa", "Kelas", "Progress Revisi", "Nilai Guru 1", "Nilai Guru 2", "Nilai Guru 3", "Rata-rata Nilai"];
+      const headerRow = headers.map(header => `<Cell ss:StyleID="Header"><Data ss:Type="String">${escapeExcelValue(header)}</Data></Cell>`).join("");
+      const dataRows = rows.map(row => {
+        const cells = row.map((value, index) => {
+          const type = index === 0 || (index >= 4 && value !== "") ? "Number" : "String";
+          return `<Cell><Data ss:Type="${type}">${escapeExcelValue(value)}</Data></Cell>`;
+        }).join("");
+        return `<Row>${cells}</Row>`;
+      }).join("");
+
+      const workbook = `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+  <Styles>
+    <Style ss:ID="Header"><Font ss:Bold="1"/><Interior ss:Color="#E0E7FF" ss:Pattern="Solid"/></Style>
+  </Styles>
+  <Worksheet ss:Name="Rekap Nilai">
+    <Table>
+      <Row>${headerRow}</Row>
+      ${dataRows}
+    </Table>
+  </Worksheet>
+</Workbook>`;
+
+      const blob = new Blob(["\ufeff", workbook], { type: "application/vnd.ms-excel" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `rekap-nilai-siswa-${new Date().toISOString().slice(0, 10)}.xls`;
+      link.click();
+      URL.revokeObjectURL(link.href);
     }
 
     function renderStudentTable(filterText = "") {
